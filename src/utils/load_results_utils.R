@@ -224,6 +224,9 @@ resolve_option_value <- function(opt_name, test_options) {
   if (!is.null(test_options$noise) && !is.null(test_options$noise[[opt_name]])) {
     return(test_options$noise[[opt_name]])
   }
+  if (!is.null(test_options$regularization) && !is.null(test_options$regularization[[opt_name]])) {
+    return(test_options$regularization[[opt_name]])
+  }
   return(NA)
 }
 
