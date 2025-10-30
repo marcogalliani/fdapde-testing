@@ -107,7 +107,7 @@ if (length(args) == 0) {
 ## Select the test option
 if (is.null(file_options)) {
   file_options_list
-  file_options <- file_options_list[1] ## <====== input here
+  file_options <- file_options_list[3] ## <====== input here
 }
 
 ## Load selected options
@@ -132,10 +132,21 @@ cat.subsection_title("Quantitative analysis")
 ## Load data
 loaded_qnt_results <- load_quantitative_results(test_options, path_list)
 
-## Plot
+## Plot quantitative
 source(paste0("tests/", test_suite, "/utils/plot_results.R"))
-pdf(file = paste(path_list$images, test_options$name_test, "_quantitative.pdf", sep = ""))
+pdf(file = paste(path_list$images, test_options$name_test, "_quantitative.pdf", sep = ""), width = 15,height = 10)
 plot_quantitative_results(loaded_qnt_results)
+dev.off()
+
+## Quantitative analysis ----
+cat.subsection_title("Qualitative analysis")
+
+## Load data
+loaded_qlt_results <- load_qualitative_results(test_options, data, path_list)
+
+## Plot
+pdf(file = paste(path_list$images, test_options$name_test, "_qualitative.pdf", sep = ""))
+plot_qualitative_results(loaded_qnt_results, loaded_qlt_results)
 dev.off()
 
 ## Optionally open the results directory

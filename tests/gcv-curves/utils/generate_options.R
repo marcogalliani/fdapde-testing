@@ -30,7 +30,7 @@ generate_options <- function(test_suite, name_main_test, path_queue) {
   model_colors <- brewer.pal(length(model_labels), "Set1")
   
   ## Options that you want to be common across tests 
-  lambda_grid <- pracma::logspace(-6, 1, n = 15)
+  lambda_grid <- pracma::logspace(-6, 2, n = 15)
   seed <- 1412
   
   switch(
@@ -45,28 +45,28 @@ generate_options <- function(test_suite, name_main_test, path_queue) {
         cpp_script = "fPCA-2D",
         test_options = list(
           n_reps = 1,
-          varying_options = c("NSR","n_nodes", "n_locs")
+          varying_options = c("NSR","n_nodes", "n_locs", "n_stat_units")
         ),
         domain_and_locations = list(
           name_mesh = "unit_square",
           locs_eq_nodes = FALSE
         ),
         dimensions = list(
-          n_nodes = c(400),       # vectors to be combined
-          n_locs = c(400),   # vectors to be combined
-          n_stat_units = 50,
+          n_nodes = c(1000),       # vectors to be combined
+          n_locs = c(600),   # vectors to be combined
+          n_stat_units = c(100),
           n_nodes_HR_grid = 1000
         ),
         model_options = list(
-          n_comp = 4
+          n_comp = 3
         ),
         data = list(
           mean = FALSE,
-          var_pct = c(0.4,0.3,0.2,0.1) #pct of variance explained by each PC (w.r.t. to true data)
+          var_pct = c(0.6,0.3,0.1) #pct of variance explained by each PC (w.r.t. to true data)
 
         ),
         noise = list(
-          NSR = c(0.10),    # vectors to be combined
+          NSR = c(0.10,1,3),    # vectors to be combined
           seed = seed
         ),
         regularization = list(
@@ -82,6 +82,7 @@ generate_options <- function(test_suite, name_main_test, path_queue) {
           "nsr", sprintf("%.2f", comb_row$NSR),
           "nn", sprintf("%04d", comb_row$n_nodes),
           "nl", sprintf("%04d", comb_row$n_locs),
+          "nsu", sprintf("%04d", comb_row$n_stat_units),
           sep = "_"
         )
       }

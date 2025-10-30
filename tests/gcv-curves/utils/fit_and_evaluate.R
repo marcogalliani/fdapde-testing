@@ -55,6 +55,9 @@ fit_and_evaluate_models <- function(path_list,
       
       ## Fit the calibrated model to get gcv scores
       model <- fit_model(model_name, domain, data, path_list, test_options)
+
+      ## Adjust results
+      model <- adjust_results(model, data)
         
       ## Fit #lambda_grid uncalibrated models
       ## Write JSON arguments for the C++ solver ----

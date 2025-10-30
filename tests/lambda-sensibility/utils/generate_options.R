@@ -44,7 +44,7 @@ generate_options <- function(test_suite, name_main_test, path_queue) {
         model_colors = model_colors,
         cpp_script = "fPCA-2D",
         test_options = list(
-          n_reps = 10,
+          n_reps = 30,
           varying_options = c("lambda")
         ),
         domain_and_locations = list(
@@ -52,9 +52,9 @@ generate_options <- function(test_suite, name_main_test, path_queue) {
           locs_eq_nodes = FALSE
         ),
         dimensions = list(
-          n_nodes = 400,       # vectors to be combined
-          n_locs = 400,   # vectors to be combined
-          n_stat_units = 50,
+          n_nodes = 1000,       # vectors to be combined
+          n_locs = 600,   # vectors to be combined
+          n_stat_units = 100,
           n_nodes_HR_grid = 1000
         ),
         model_options = list(
@@ -66,7 +66,7 @@ generate_options <- function(test_suite, name_main_test, path_queue) {
 
         ),
         noise = list(
-          NSR = 0.10,    # vectors to be combined
+          NSR = 0.5,    # vectors to be combined
           seed = seed
         ),
         regularization = list(
