@@ -16,6 +16,7 @@
 fit_model <- function(model_name, domain, data, path_list, test_options) {
   switch(model_name,
          mv = return(MVPCA(data, test_options)),
+         tpsmv = return(tpsPCA(data, test_options)),
          smv = return(sMVPCA(model_name, domain, data, path_list, test_options)),
          subspace = return(fPCA(model_name, domain, data, path_list, test_options)),
          subspace_fpc_spec = return(fPCA(model_name, domain, data, path_list, test_options)),
@@ -43,6 +44,12 @@ MVPCA <- function(data, test_options) {
   # Fit multivariate PCA ----
   start.time <- Sys.time()
   X <- data$X
+
+  if(test_options$model_options$mean){
+    model$results$center_locs <- colMeans(X)
+    X <- sweep(X,2,model$results$center_locs,FUN="-")
+  }
+
   n_comp <- test_options$model_options$n_comp
   model_MV_PCA <- prcomp(X, center = FALSE, rank. = n_comp)
   end.time <- Sys.time()
@@ -59,6 +66,7 @@ MVPCA <- function(data, test_options) {
   model$results$scores <- scores
   model$results$X_hat <- NULL
   model$results$X_hat_locs <- X_hat_locs
+  model$results$lambda <- rep(0, n_comp)
   model$results$lambda <- rep(0, n_comp)
   model$results$execution_time <- end.time - start.time
   
@@ -119,6 +127,7 @@ fPCA <- function(model_name, domain, data, path_list, test_options) {
   cpp_script_arguments$options$solver <- model_name
   cpp_script_arguments$options$n_comp <- test_options$model_options$n_comp
   cpp_script_arguments$options$lambda_grid <- test_options$regularization$lambda_grid
+  cpp_script_arguments$options$mean <- test_options$model_options$mean
   
   file_name_params <- paste0(
     test_options$name_test, "_", model_name, "_batch",
@@ -143,6 +152,10 @@ fPCA <- function(model_name, domain, data, path_list, test_options) {
   # Save results ----
   
   ## Load results ----
+  if(test_options$model_options$mean){
+    model$results$center <- as.matrix(read.csv(paste(path_tmp_results, "center.csv", sep = "")))
+    model$results$center_locs <- as.matrix(read.csv(paste(path_tmp_results, "center_locs.csv", sep = "")))
+  }
   model$results$loadings <- as.matrix(read.csv(paste(path_tmp_results, "loadings.csv", sep = "")))
   model$results$loadings_locs <- as.matrix(read.csv(paste(path_tmp_results, "loadings_locs.csv", sep = "")))
   model$results$scores <- as.matrix(read.csv(paste(path_tmp_results, "scores.csv", sep = "")))
@@ -150,6 +163,8 @@ fPCA <- function(model_name, domain, data, path_list, test_options) {
   model$results$X_hat_locs <- as.matrix(read.csv(paste(path_tmp_results, "reconstruction_at_locs.csv", sep = "")))
   model$results$lambda <- as.matrix(read.csv(paste(path_tmp_results, "lambda.csv", sep = "")))
   model$results$gcv_scores <- as.matrix(read.csv(paste(path_tmp_results, "gcv_scores.csv", sep = "")))
+  model$results$var_pct <- as.matrix(read.csv(paste(path_tmp_results, "var_pct.csv", sep = "")))
+  model$results$smoothed_data <- as.matrix(read.csv(paste(path_tmp_results, "smoothed_data.csv", sep = "")))
   model$results$execution_time <- end.time - start.time
   
   # Add flags ----
@@ -223,6 +238,13 @@ sMVPCA <- function(model_name, domain, data, path_list, test_options) {
   
   # Run C++ executable ----
   start.time <- Sys.time()
+  X <- data$X
+
+  if(test_options$model_options$mean){
+    model$results$center_locs <- colMeans(X)
+    X <- sweep(X,2,model$results$center_locs,FUN="-")
+  }
+  write.csv(format(X, digits = 16), file = paste0(path_tmp_data, "X.csv"))
   system(paste0("cd ", path_cpp_script, " && ", "./fit_model_smv ", file_name_params),
          ignore.stdout = IGNORE_CPP_OUTPUT)
   end.time <- Sys.time()
@@ -241,6 +263,108 @@ sMVPCA <- function(model_name, domain, data, path_list, test_options) {
   
   # Add flags ----
   model$model_traits$is_functional <- FALSE
+  model$model_traits$has_interpolator <- FALSE
+  
+  return(model)
+}
+
+## Function: tpsPCA
+# - Args:
+#   * data: list containing at least $X (data matrix)
+#   * test_options: list with field $model_options$n_comp (number of components)
+# - Desc:
+#   Smooths the data (via `mgcv`) and then fits a standard multivariate PCA model (via `prcomp`) to the smoothed data. Returns loadings, scores, reconstructions, and timing.
+tpsPCA <- function(data, test_options) {
+
+  ## Data
+  X <- data$X
+  locations <- as.data.frame(data$locations)
+
+  n_units <- nrow(X)
+  n_locs <- ncol(X)
+  n_comp <- test_options$model_options$n_comp 
+  M <- 100
+  n_tps_basis <- 600
+  lambda_grid <- test_options$regularization$lambda_grid
+  ## Initialize empty model
+  model <- list()
+  start.time <- Sys.time()
+  # Fit multivariate PCA ----  
+  if(test_options$model_options$mean){
+    model$results$center_locs <- colMeans(X)
+    X <- sweep(X,2,model$results$center_locs,FUN="-")
+  }
+  ## Construct tps smoother
+  smooth_setup <- smoothCon(s(x,y,bs="tp",k=n_tps_basis), data=locations)[[1]]
+
+  B <- smooth_setup$X 
+  S <- smooth_setup$S[[1]] 
+  B_t_B <- t(B) %*% B
+  X_B <- X %*% B
+
+  # Function to smooth a n_units-by-n_locs matrix
+  smooth_mat <- function(Y, lambda) {
+    H_inv <- B_t_B + lambda * S
+    beta_hat_matrix <- solve(H_inv, t(Y%*%B))
+    Y_smoothed <- t(B %*% beta_hat_matrix)
+    return(Y_smoothed)
+  }
+  # Function to estimate the Effective Degrees of Freedom (EDF) using the Randomized Trace method
+  # EDF = Trace(Psi) where Psi = B * (B'B + lambda*S)^-1 * B'
+  edf_randomized <- function(lambda, M) {
+    # 1. Generate M Rademacher random vectors (values of +1 or -1 with probability 0.5)
+    # Matrix Z is (n_locs x M)
+    Z <- matrix(sample(c(-1, 1), size = n_locs * M, replace = TRUE), 
+                nrow = M, ncol = n_locs)
+    # 2.  Smooth Z (M-by-locs)
+    W <- smooth_mat(Z,lambda)
+    # 3. Estimate Trace(B (B^TB + lambda P)^(-1) B) = (1/M) * Trace(Z B (B^TB + lambda P)^(-1) B^TZ^T) = (1/M) * Trace(WZ^T)
+    # Trace(WZ') = Trace(Z'W) = sum(diag(Z'W)) = sum_i (Z_i * W_i)
+    trace_estimate <- sum(diag(W%*%t(Z)))/ M
+    return(trace_estimate)
+  }
+  ## Select lambda through GCV
+  edf_values <- rep(NA, length(lambda_grid))
+  gcv_scores <- rep(NA, length(lambda_grid))
+  for (i in 1:length(lambda_grid)) {
+    lambda <- lambda_grid[i]
+    # 1. Compute Smoothed X
+    X_smoothed <- smooth_mat(X,lambda)
+    # 2. Compute Randomized EDF
+    edf_values[i] <- edf_randomized(lambda, M)
+    # 3. Compute the penalty (DOF) and GCV score
+    DOF <- n_locs - edf_values[i]
+    RSS <- sum((X - X_smoothed)^2) 
+    gcv_scores[i] <- (n_locs / (DOF^2)) * RSS
+  }
+  ## smooth with optimal lambda
+  min_index <- which.min(gcv_scores)
+  optimal_lambda <- lambda_grid[min_index]
+  cat("Optimal lambda: ", optimal_lambda, "\n")
+  X_smoothed <- smooth_mat(X,optimal_lambda)
+  ## fit multivariate PCA on the smoothed data
+  n_comp <- test_options$model_options$n_comp
+  model_MV_PCA <- prcomp(X_smoothed, center = FALSE, rank. = n_comp)
+  end.time <- Sys.time()
+  cat(paste("finished after", end.time - start.time, attr(end.time - start.time, "units"), "\n"))
+  
+  # Extract components and reconstruction ----
+  loadings_locs <- model_MV_PCA$rotation
+  scores <- model_MV_PCA$x
+  X_hat_locs <- scores %*% t(loadings_locs)
+  
+  # Save results ----
+  model$results$loadings <- NULL
+  model$results$loadings_locs <- loadings_locs
+  model$results$scores <- scores
+  model$results$X_hat <- NULL
+  model$results$X_hat_locs <- X_hat_locs
+  model$results$lambda <- optimal_lambda
+  model$results$smoothed_data <- X_smoothed
+  model$results$execution_time <- end.time - start.time
+  
+  # Add flags ----
+  model$model_traits$is_functional   <- FALSE
   model$model_traits$has_interpolator <- FALSE
   
   return(model)

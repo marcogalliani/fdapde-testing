@@ -66,8 +66,8 @@ auto fit_model(Triangulation<2,2> D,
 
     int n_dof = m.smoothed_data().cols();
     matrix_t Id = matrix_t::Identity(n_dof, n_dof);
-    model.S_ = svd.matrixU().leftCols(n_comp);
-    model.F_ = llt.permutationPinv()*llt.matrixL().solve(Id).transpose()*svd.matrixV().leftCols(n_comp)*svd.singularValues().head(n_comp).asDiagonal();
+    model.S_ = svd.matrixU().leftCols(n_comp)*svd.singularValues().head(n_comp).asDiagonal();
+    model.F_ = llt.permutationPinv()*llt.matrixL().solve(Id).transpose()*svd.matrixV().leftCols(n_comp);
     model.Fn_ = m.Psi() * model.F_;
 
     return model;
