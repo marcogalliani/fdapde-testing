@@ -40,7 +40,8 @@ auto fit_model(Triangulation<2,2> D,
                 const matrix_t& locs,
                 const std::vector<double>& lambda_grid,
                 const std::string& solver_name, 
-                const int n_comp) {
+                const int n_comp,
+                bool compute_mean = false) {
   
   std::cout << "Fit: " << solver_name << std::endl;
   std::cout << "- Running solver: " << solver_name << std::endl;
@@ -63,10 +64,13 @@ auto fit_model(Triangulation<2,2> D,
   // Initialize the model
   fPCA model("X", data, fe_ls_elliptic(a, F));
   
+  int mean = 0x0;
+  if(compute_mean) mean = ComputeMean;
+
   // Select the fPCA solver according to solver_name
   std::visit(
     [&](auto&& solver){
-      model.fit(n_comp, lambda_grid, ComputeRandSVD | OptimizeGCV | DoNotComputeMean, solver);
+      model.fit(n_comp, lambda_grid, ComputeRandSVD | OptimizeGCV | mean, solver);
     },
     get_fpca_solver(solver_name)
   );
@@ -115,6 +119,7 @@ int main(int argc, char* argv[]) {
   std::string solver_name = jroot["options"].value("solver", "default_solver");
   std::vector<double> lambda_grid = jroot["options"].at("lambda_grid").get<std::vector<double>>();
   double n_comp = jroot["options"].value("n_comp", 3);
+  bool mean = jroot["options"].value("mean", false);
   
   std::cout << "Options:" << std::endl;
   std::cout << "- Solver name: " << solver_name << std::endl;
@@ -140,7 +145,7 @@ int main(int argc, char* argv[]) {
   std::cout << std::endl;
   
   // Fit the model
-  auto model = fit_model(D, X, locs, lambda_grid, solver_name, n_comp);
+  auto model = fit_model(D, X, locs, lambda_grid, solver_name, n_comp, mean);
   
   // Post-processing
   matrix_t rec_X = model.S()*model.F().transpose();
@@ -149,6 +154,10 @@ int main(int argc, char* argv[]) {
   // rec_X_locs = rec_X_locs.rowwise() + model.center_locs().transpose();
   
   // Save results ----
+  if(mean){
+    write_csv(path_results + "center.csv", model.center());
+    write_csv(path_results + "center_locs.csv", model.center_locs());
+  }
   write_csv(path_results + "loadings.csv", model.F());
   write_csv(path_results + "loadings_locs.csv", model.Fn());
   write_csv(path_results + "scores.csv", model.S());
@@ -156,6 +165,8 @@ int main(int argc, char* argv[]) {
   write_csv(path_results + "reconstruction_at_locs.csv", rec_X_locs);
   write_csv(path_results + "lambda.csv", model.lambda());
   write_csv(path_results + "gcv_scores.csv", model.gcv_scores());
+  write_csv(path_results + "var_pct.csv", model.var_explained());
+  write_csv(path_results + "smoothed_data.csv", model.smoothed_data());
   
   // Ensure the file ends with a newline (optional cleanup)
   std::ofstream fix_newline(path_results + "lambda.csv", std::ios::app);
