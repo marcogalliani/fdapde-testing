@@ -66,7 +66,7 @@ generate_options <- function(test_suite, name_main_test, path_queue) {
 
         ),
         noise = list(
-          NSR = c(0.10,1,3),    # vectors to be combined
+          NSR = c(0.1,0.3,1,3),    # vectors to be combined
           seed = seed
         ),
         regularization = list(
