@@ -115,7 +115,7 @@ dev.off()
 ### RMSE ----
 
 ## Open a pdf where to save the plots
-pdf(paste(path_list$images, name_main_test, "/rmse.pdf", sep = ""), width = 15, height = 15)
+pdf(paste(path_list$images, name_main_test, "/rmse.pdf", sep = ""), width = 15, height = 8)
 
 
 #### Reconstruction error at locations ----
@@ -176,6 +176,57 @@ plot.aggregated_data(
 
 ## Close pdf
 dev.off()
+
+
+## Combined loadings
+n_comp <- length(unique(loaded_results$rmse$loadings_locs$Group))
+
+if("NSR" %in% loaded_results$varying_options){
+  pdf(paste(path_list$images, name_main_test, "/combined_loadings.pdf", sep = ""), width = 15, height = 10)
+
+  name_vect <- unique(loaded_results$rmse$loadings_locs$Group)
+  group_name <- "NSR"
+  plots <- list()
+  for (k in 1:length(name_vect)) {
+    data_plot <- subset(loaded_results$rmse$loadings_locs, Group ==name_vect[k])
+    data_plot$Group <- data_plot[[group_name]]
+    
+    model_names <- loaded_results$model_names
+    model_labels <- loaded_results$model_labels
+    model_colors <- loaded_results$model_colors
+
+    plots[[k]] <- plot.grouped_boxplots(
+            data_plot[, c("Group", model_names)],
+            values_name = NULL,
+            group_name = group_name,
+            subgroup_name = NULL,
+            subgroup_labels = model_labels,
+            subgroup_colors = model_colors,
+            limits = limits,
+            LEGEND = T
+          ) + 
+          guides(
+          fill = guide_legend(nrow = 1),
+          color = guide_legend(nrow = 1)
+        ) + 
+        std_plot_settings()
+  }
+  ## get legend
+  shared_legend <- get_legend(plots[[1]])
+
+  final_plots <- lapply(plots,function(p) p + theme(legend.position='none'))
+
+  grid <- arrangeGrob(grobs = final_plots, ncol = 1)
+  grid <- labled_plots_grid(
+    grid,
+    labels_rows = paste0("fPC",1:n_comp),
+    height = 8, width = 8
+  )
+  grid.arrange(shared_legend, grid, heights=c(1,20))
+
+  ## Close pdf
+  dev.off()
+}
 
 ### Angles ----
 
