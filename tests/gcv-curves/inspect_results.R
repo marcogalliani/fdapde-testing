@@ -145,7 +145,7 @@ cat.subsection_title("Qualitative analysis")
 loaded_qlt_results <- load_qualitative_results(test_options, data, path_list)
 
 ## Plot
-pdf(file = paste(path_list$images, test_options$name_test, "_qualitative.pdf", sep = ""))
+pdf(file = paste(path_list$images, test_options$name_test, "_qualitative.pdf", sep = ""),height = 8,width = 15)
 plot_qualitative_results(loaded_qnt_results, loaded_qlt_results)
 dev.off()
 

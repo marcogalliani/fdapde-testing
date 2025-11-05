@@ -458,7 +458,7 @@ plot.multiple_lines <- function(data,
 # - Desc:
 #   Adds row and column labels (and optional title) to a grid of ggplots.
 labled_plots_grid <- function(plot, title = NULL, labels_cols = NULL,
-                              labels_rows = NULL, height = 4, width = 4) {
+                              labels_rows = NULL, height = 8, width = 15) {
   
   ## Compute grid dimensions
   n_row <- max(plot$layout$t)
@@ -467,7 +467,7 @@ labled_plots_grid <- function(plot, title = NULL, labels_cols = NULL,
   ## Add column labels
   if (!is.null(labels_cols)) {
     labels_grobs_cols <- lapply(labels_cols, function(lab)
-      textGrob(lab, gp = gpar(fontsize = 12, fontface = "bold")))
+      textGrob(lab, gp = gpar(fontsize = 20, fontface = "bold")))
     labels_grobs_cols <- arrangeGrob(grobs = labels_grobs_cols, nrow = 1)
   }
   
@@ -477,18 +477,18 @@ labled_plots_grid <- function(plot, title = NULL, labels_cols = NULL,
     labels_grobs_rows <- list()
     if (!is.null(labels_cols)) {
       add <- 1
-      labels_grobs_rows[[1]] <- textGrob(" ", gp = gpar(fontsize = 12, fontface = "bold"))
+      labels_grobs_rows[[1]] <- textGrob(" ", gp = gpar(fontsize = 20, fontface = "bold"))
     }
     for (row in 1:length(labels_rows) + add) {
       label_row <- labels_rows[[row - add]]
-      labels_grobs_rows[[row]] <- textGrob(label_row, gp = gpar(fontsize = 12, fontface = "bold"), rot = 90)
+      labels_grobs_rows[[row]] <- textGrob(label_row, gp = gpar(fontsize = 20, fontface = "bold"), rot = 90)
     }
     labels_grobs_rows <- arrangeGrob(grobs = labels_grobs_rows, ncol = 1, heights = c(1, rep(height, n_row)))
   }
   
   ## Add title
   if (!is.null(title)) {
-    title_grob <- textGrob(title, gp = gpar(fontsize = 14, fontface = "bold"))
+    title_grob <- textGrob(title, gp = gpar(fontsize = 20, fontface = "bold"))
   }
   
   ## Combine all components
