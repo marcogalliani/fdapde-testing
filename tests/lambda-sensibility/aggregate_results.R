@@ -1,4 +1,4 @@
-# = ========================================================================== =
+got# = ========================================================================== =
 # - Test: Example data decomposition — Aggregate results
 # - Desc: Loads quantitative results for all options of a selected test and
 #         returns them as a structured list, then aggregates the data in plots
@@ -177,6 +177,57 @@ plot.aggregated_data(
 ## Close pdf
 dev.off()
 
+pdf(paste(path_list$images, name_main_test, "/combined_loadings.pdf", sep = ""), width = 15, height = 10)
+
+## Combined loadings
+name_vect <- unique(loaded_results$rmse$loadings_locs$Group)
+group_name <- "lambda"
+plots <- list()
+for (k in 1:length(name_vect)) {
+  data_plot <- subset(loaded_results$rmse$loadings_locs, Group ==name_vect[k])
+  data_plot$Group <- data_plot[[group_name]]
+  
+
+  model_names <- loaded_results$model_names
+  model_labels <- loaded_results$model_labels
+  model_colors <- loaded_results$model_colors
+
+  plots[[k]] <- plot.grouped_boxplots(
+          data_plot[, c("Group", model_names)],
+          values_name = NULL,
+          group_name = expression(lambda),
+          subgroup_name = NULL,
+          subgroup_labels = model_labels,
+          subgroup_colors = model_colors,
+          limits = limits,
+          LEGEND = T
+        ) +
+         guides(
+          fill = guide_legend(nrow = 1),
+          color = guide_legend(nrow = 1)
+        ) +
+        std_plot_settings() 
+# Custom function to extract the legend grob
+get_legend <- function(my_ggplot) {
+  # Convert the ggplot to a gtable object
+  tmp <- ggplotGrob(my_ggplot)
+  # Find the position of the legend grob ("guide-box")
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  # Extract the legend grob
+  legend <- tmp$grobs[[leg]]
+  return(legend)
+}
+## get legend
+shared_legend <- get_legend(plots[[1]])
+
+final_plots <- lapply(plots,function(p) p + theme(legend.position='none'))
+
+grid <- arrangeGrob(grobs = final_plots, ncol = 1)
+grid.arrange(shared_legend, grid, heights=c(1,20))
+
+## Close pdf
+dev.off()
+
 ### Angles ----
 
 ## Open a pdf where to save the plots
@@ -197,23 +248,3 @@ plot.aggregated_data(
 ## Close pdf
 dev.off()
 
-### Regularization ----
-
-## Open a pdf where to save the plots
-pdf(paste(path_list$images, name_main_test, "/regularization.pdf", sep = ""), width = 15, height = 15)
-
-## Set plots parameters
-data_plot <- loaded_results$lambdas
-data_plot[loaded_results$model_names] <- log10(data_plot[loaded_results$model_names])
-title_prefix <- "lambda selected w.r.t the"
-values_name <- "lambda"
-limits <- c(-12, 1)
-
-## Plot aggregated results
-plot.aggregated_data(
-  loaded_results, data_plot, title_prefix, values_names,
-  order = order, limits = limits
-)
-
-## Close pdf
-dev.off()

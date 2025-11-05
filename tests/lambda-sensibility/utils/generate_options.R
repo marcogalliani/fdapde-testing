@@ -20,10 +20,10 @@ generate_options <- function(test_suite, name_main_test, path_queue) {
   # - model_names: used for indexing (no spaces, please)
   # - model_labels: used for plotting
   model_names <- c(
-    "subspace", "sequential"
+    "sequential", "direct", "subspace"
   )
   model_labels <- c(
-    "subspace", "sequential"
+    "sequential", "direct", "subspace"
   )
   
   ## Define the color palette
@@ -44,7 +44,7 @@ generate_options <- function(test_suite, name_main_test, path_queue) {
         model_colors = model_colors,
         cpp_script = "fPCA-2D",
         test_options = list(
-          n_reps = 10,
+          n_reps = 30,
           varying_options = c("lambda","n_nodes","n_locs","n_stat_units")
         ),
         domain_and_locations = list(
