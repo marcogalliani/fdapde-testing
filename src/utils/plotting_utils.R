@@ -24,6 +24,9 @@ std_plot_settings <- function() {
         hjust = 0.5,
         vjust = 1
       ),
+      legend.text=element_text(size=20),
+      axis.text=element_text(size=15),
+      axis.title=element_text(size=20),
       legend.position = "top",
     )
 }
@@ -61,6 +64,20 @@ std_plot_settings_fields <- function() {
       legend.title = element_blank(),
       legend.text = element_text(angle = 45, hjust = 1)
     )
+}
+## Function: get_legend
+# - Args:
+#   * my_ggplot: a ggplot object from which extracting the legend
+# - Desc:
+#   Returns the legend of the ggplot to be added using grid.arrange(p,legend,heights=c(10,1))
+get_legend <- function(my_ggplot) {
+  # Convert the ggplot to a gtable object
+  tmp <- ggplotGrob(my_ggplot)
+  # Find the position of the legend grob ("guide-box")
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  # Extract the legend grob
+  legend <- tmp$grobs[[leg]]
+  return(legend)
 }
 
 
@@ -330,7 +347,7 @@ plot.grouped_boxplots <- function(data,
     geom_boxplot(na.rm = TRUE) +
     labs(x = group_name, y = values_name) +
     scale_fill_manual(name = subgroup_name, values = subgroup_colors) +
-    scale_color_manual(name = subgroup_name, values = subgroup_colors)
+    scale_color_manual(name = subgroup_name, values = scales::col_darker(subgroup_colors, amount = 20))
   
   ## Add limits
   if (!is.null(limits)) {
@@ -467,7 +484,7 @@ labled_plots_grid <- function(plot, title = NULL, labels_cols = NULL,
   ## Add column labels
   if (!is.null(labels_cols)) {
     labels_grobs_cols <- lapply(labels_cols, function(lab)
-      textGrob(lab, gp = gpar(fontsize = 12, fontface = "bold")))
+      textGrob(lab, gp = gpar(fontsize = 20, fontface = "bold")))
     labels_grobs_cols <- arrangeGrob(grobs = labels_grobs_cols, nrow = 1)
   }
   
@@ -477,11 +494,11 @@ labled_plots_grid <- function(plot, title = NULL, labels_cols = NULL,
     labels_grobs_rows <- list()
     if (!is.null(labels_cols)) {
       add <- 1
-      labels_grobs_rows[[1]] <- textGrob(" ", gp = gpar(fontsize = 12, fontface = "bold"))
+      labels_grobs_rows[[1]] <- textGrob(" ", gp = gpar(fontsize = 20, fontface = "bold"))
     }
     for (row in 1:length(labels_rows) + add) {
       label_row <- labels_rows[[row - add]]
-      labels_grobs_rows[[row]] <- textGrob(label_row, gp = gpar(fontsize = 12, fontface = "bold"), rot = 90)
+      labels_grobs_rows[[row]] <- textGrob(label_row, gp = gpar(fontsize = 20, fontface = "bold"), rot = 90)
     }
     labels_grobs_rows <- arrangeGrob(grobs = labels_grobs_rows, ncol = 1, heights = c(1, rep(height, n_row)))
   }
@@ -718,12 +735,17 @@ plot.aggregated_data <- function(loaded_results, data_plot_orig, title_prefix, v
           data_plot_trimmed[, c("Group", valid_models)],
           values_name = NULL,
           group_name = group_name,
-          subgroup_name = "Approaches",
+          subgroup_name = NULL,
           subgroup_labels = model_labels[match(valid_models, model_names)],
           subgroup_colors = model_colors[match(valid_models, model_names)],
           limits = limits,
-          LEGEND = FALSE
-        ) + std_plot_settings()
+          LEGEND = TRUE
+        ) + 
+        guides(
+          fill = guide_legend(nrow = 1),
+          color = guide_legend(nrow = 1)
+        ) + 
+        scale_y_log10() +std_plot_settings()
       }
       
       ## Lines (linear x)
@@ -827,5 +849,5 @@ plot.aggregated_data <- function(loaded_results, data_plot_orig, title_prefix, v
       plot_loglog_normalized <- labled_plots_grid(plot_loglog_normalized, title, labels_cols, labels_rows, 9, 7)
       grid.arrange(plot_loglog_normalized)
     }
-  }
+  }  
 }

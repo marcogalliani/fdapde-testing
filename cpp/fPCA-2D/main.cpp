@@ -165,8 +165,8 @@ int main(int argc, char* argv[]) {
   write_csv(path_results + "reconstruction_at_locs.csv", rec_X_locs);
   write_csv(path_results + "lambda.csv", model.lambda());
   write_csv(path_results + "gcv_scores.csv", model.gcv_scores());
-  write_csv(path_results + "var_pct.csv", model.var_explained());
-  write_csv(path_results + "smoothed_data.csv", model.smoothed_data());
+  //write_csv(path_results + "var_pct.csv", model.var_explained());
+  //write_csv(path_results + "smoothed_data.csv", model.smoothed_data());
   
   // Ensure the file ends with a newline (optional cleanup)
   std::ofstream fix_newline(path_results + "lambda.csv", std::ios::app);
