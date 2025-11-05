@@ -233,4 +233,69 @@ plot_qualitative_results <- function(quantitative_results, qualitative_results) 
   for (m in seq_along(model_names)) grid.arrange(plots[[m]])
   for (m in seq_along(model_names)) grid.arrange(plots_HR_clean[[m]])
   for (m in seq_along(model_names)) grid.arrange(plots_HR[[m]])
+
+
+  # Plot grid of methods ----
+  ## n_comp-by-n_methods grid, considering only the median
+  plots_median <- list()
+  
+  for (i in 1:n_comp) {
+    plot_row <- list()
+    
+    limits <- range(c(loadings_true_HR[, i],limits_HR[,i]))
+    breaks <- seq(limits[1], limits[2], length = 10)
+    ## First column: True fPC
+    plot_row[[1]] <- plot.field_tile(
+      qualitative_results$grid,
+      loadings_true_HR[, i],
+      boundary = boundary,
+      limits = limits,
+      breaks = breaks
+    ) + 
+      std_plot_settings_fields()
+    
+    ## Next columns: methods, median only
+    for (m in 1:length(model_names)) {
+      indexes <- tapply(
+      quantitative_results$rmse$loadings_locs[[model_names[m]]],
+      quantitative_results$rmse$loadings_locs$Group,
+      function(x) {
+        sapply(quantile(x, c(0, 0.5, 1), na.rm = TRUE), function(q) which.min(abs(x - q)))
+      }
+    )
+
+      name_model  <- model_names[m]
+      idx_median  <- indexes[[i]][3]
+      
+      plot_row[[m + 1]] <- plot.field_tile(
+        qualitative_results$grid,
+        loadings_HR[[name_model]][[idx_median]][, i],
+        boundary = boundary,
+        limits = limits,
+        breaks = breaks
+      ) +
+        std_plot_settings_fields()
+    }
+    
+    ## arrange row (side by side)
+    plots_median[[i]] <- arrangeGrob(grobs = plot_row, nrow = 1)
+  }
+  
+  ## Stack rows
+  final_median_grid <- arrangeGrob(grobs = plots_median, ncol = 1)
+  
+  ## Add labels using your utility
+  labels_cols <- c("True", model_labels)   # column labels
+  labels_rows <- paste0("f", 1:n_comp)      # row labels
+  
+  final_median_grid <- labled_plots_grid(
+    final_median_grid,
+    title = "Median",
+    labels_cols = labels_cols,
+    labels_rows = labels_rows,
+    height = 8, width = 8
+  )
+  
+  ## Show the final grid
+  grid.arrange(final_median_grid)
 }
