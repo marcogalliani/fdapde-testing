@@ -16,7 +16,9 @@ std_plot_settings <- function() {
   ## Create standard theme
   standard_plot_settings <- theme_bw() +
     theme(
-      text = element_text(size = 12),
+      text = element_text(size = 20),
+      axis.text = element_text(size = 15),
+      legend.text = element_text(size = 15),
       plot.title = element_text(
         color = "black",
         face = "bold",
@@ -57,7 +59,7 @@ std_plot_settings_fields <- function() {
       axis.ticks.y = element_blank(),
       panel.grid.major = element_blank(),
       panel.grid.minor = element_blank(),
-      legend.text.position = "top",
+      legend.position = "top",
       legend.title = element_blank(),
       legend.text = element_text(angle = 45, hjust = 1)
     )
@@ -127,7 +129,7 @@ plot.points <- function(locations, boundary = NULL, group = NULL,
         aes(x = long, y = lat),
         fill = "transparent",
         color = "black",
-        linewidth = 1
+        linewidth = 2
       )
   }
   
@@ -227,7 +229,7 @@ plot.field_tile <- function(nodes, f, boundary = NULL,
   
   ## Build base plot
   plot <- ggplot() +
-    geom_tile(data = data, aes(x = x, y = y, fill = value)) +
+    rasterise(geom_tile(data = data, aes(x = x, y = y, fill = value,color=value))) +
     coord_fixed()
   
   ## Add contour isolines if requested
@@ -261,9 +263,11 @@ plot.field_tile <- function(nodes, f, boundary = NULL,
       limits <- limits + c(-h, h)
     }
     if (is.null(limits)) {
-      plot <- plot + scale_fill_viridis(option = colormap)
+      plot <- plot + scale_fill_viridis(option = colormap) + scale_color_viridis(option = colormap)
     } else {
-      plot <- plot + scale_fill_viridis(option = colormap, limits = limits)
+      plot <- plot + 
+      scale_fill_viridis(option = colormap, limits = limits) + 
+      scale_color_viridis(option = colormap, limits=limits)
     }
   } else {
     plot <- plot + scale_fill_viridis_d(option = colormap)
@@ -278,7 +282,7 @@ plot.field_tile <- function(nodes, f, boundary = NULL,
   
   ## Add or remove legend
   if (!LEGEND) {
-    plot <- plot + guides(fill = "none")
+    plot <- plot + guides(fill = "none",color="none")
   }
   
   return(plot)

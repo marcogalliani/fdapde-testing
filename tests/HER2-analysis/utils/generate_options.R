@@ -20,17 +20,17 @@ generate_options <- function(test_suite, name_main_test, path_queue) {
   # - model_names: used for indexing (no spaces, please)
   # - model_labels: used for plotting
   model_names <- c(
-    "mv", "tpsPCA", "smv", "sequential", "subspace"
+    "mv", "sequential", "subspace"
   )
   model_labels <- c(
-    "mv", "tpsPCA", "smv", "sequential", "subspace"
+    "mv", "sequential", "subspace"
   )
   
   ## Define the color palette
   model_colors <- brewer.pal(length(model_labels), "Set1")
   
   ## Options that you want to be common across tests 
-  lambda_grid <- pracma::logspace(-2, 2, n = 20)
+  lambda_grid <- pracma::logspace(-2, 3, n = 20)
   seed <- 1412
   
   switch(
