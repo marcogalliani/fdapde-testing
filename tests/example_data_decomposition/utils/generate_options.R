@@ -20,14 +20,14 @@ generate_options <- function(test_suite, name_main_test, path_queue) {
   # - model_names: used for indexing (no spaces, please)
   # - model_labels: used for plotting
   model_names <- c(
-    "mv", "smv", "subspace", "subspace_fpc_spec", "sequential", "direct"
+    "sequential", "direct", "subspace", "subspace_fpc_spec", "mv", "smv"
   )
   model_labels <- c(
-    "mv", "smv", "subspace", "sub_fspec", "sequential", "direct"
+    "sequential", "direct", "subspace", "sub_fspec", "mv", "smv"
   )
   
   ## Define the color palette
-  model_colors <- brewer.pal(length(model_labels), "Set1")
+  model_colors <- c(brewer.pal(length(model_labels)-2, "Set1"),"ivory3","gold2")
   
   ## Options that you want to be common across tests 
   lambda_grid <- pracma::logspace(-6, 1, n = 15)
@@ -52,8 +52,8 @@ generate_options <- function(test_suite, name_main_test, path_queue) {
           locs_eq_nodes = FALSE
         ),
         dimensions = list(
-          n_nodes = c(900),       # vectors to be combined
-          n_locs = c(1600),   # vectors to be combined
+          n_nodes = c(1000),       # vectors to be combined
+          n_locs = c(600),   # vectors to be combined
           n_stat_units = 100,
           n_nodes_HR_grid = 1000
         ),
@@ -66,7 +66,7 @@ generate_options <- function(test_suite, name_main_test, path_queue) {
 
         ),
         noise = list(
-          NSR = c(0.10, 0.2, 0.50, 1.00),    # vectors to be combined
+          NSR = c(0.10),#, 0.3, 1.00, 3.00),    # vectors to be combined
           seed = seed
         ),
         regularization = list(
