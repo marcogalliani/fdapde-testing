@@ -44,7 +44,7 @@ generate_options <- function(test_suite, name_main_test, path_queue) {
         model_colors = model_colors,
         cpp_script = "fPCA-2D",
         test_options = list(
-          n_reps = 10,
+          n_reps = 30,
           varying_options = c("NSR","n_nodes", "n_locs")
         ),
         domain_and_locations = list(
@@ -66,7 +66,7 @@ generate_options <- function(test_suite, name_main_test, path_queue) {
 
         ),
         noise = list(
-          NSR = c(0.10),#, 0.3, 1.00, 3.00),    # vectors to be combined
+          NSR = c(0.10, 0.3, 1.00, 3.00),    # vectors to be combined
           seed = seed
         ),
         regularization = list(
