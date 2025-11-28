@@ -4,6 +4,7 @@
 #         and point visualization over 2D domains or meshes.
 # = ========================================================================== =
 
+TEXT_SZ <- 20
 
 ## Function: std_plot_settings
 # - Args:
@@ -16,17 +17,21 @@ std_plot_settings <- function() {
   ## Create standard theme
   standard_plot_settings <- theme_bw() +
     theme(
-      text = element_text(size = 20),
-      axis.text = element_text(size = 15),
-      legend.text = element_text(size = 15),
+      text = element_text(size = TEXT_SZ),
       plot.title = element_text(
         color = "black",
         face = "bold",
-        size = 14,
+        size = TEXT_SZ,
         hjust = 0.5,
         vjust = 1
       ),
       legend.position = "top",
+      legend.text = element_text(size = TEXT_SZ),
+      axis.title.x = element_text(size = TEXT_SZ),
+      axis.title.y = element_text(size = TEXT_SZ),
+      axis.text.x = element_text(size = TEXT_SZ),
+      axis.text.y = element_text(size = TEXT_SZ),
+      legend.text.position = "top"
     )
 }
 
@@ -329,16 +334,35 @@ plot.grouped_boxplots <- function(data,
     mutate(Group = factor(Group, levels = groups_levels, labels = group_labels)) %>%
     mutate(SubGroup = factor(SubGroup, levels = subgroup_levels, labels = subgroup_labels))
   
+  ## Frame color (Darker)
+  outline_colors <- adjustcolor(subgroup_colors, red.f = 0.6, green.f = 0.6, blue.f = 0.6)
+  names(outline_colors) <- subgroup_labels
+  
+  ## Medians for the bars 
+  data_medians <- data %>%
+    group_by(Group, SubGroup) %>%
+    summarise(Median = median(Score, na.rm = TRUE), .groups = "drop")
+  
+  box_width <- 0.75
+  pos_dodge <- position_dodge(width = box_width)
+
   ## Build plot
-  plot <- ggplot(data, aes(x = Group, y = Score, fill = SubGroup, color = SubGroup)) +
-    geom_boxplot(na.rm = TRUE) +
+  plot <- ggplot(data, aes(x = Group, y = Score, fill = SubGroup)) +
+    ##Underlying Bars 
+    geom_col(data = data_medians, 
+             aes(y = Median, group = SubGroup),
+             position = pos_dodge, width = box_width, 
+             alpha = 0.3, color = NA) +
+    # Update Boxplots to use the explicit position and width
+    stat_boxplot(geom = "errorbar", position = pos_dodge, width = box_width, aes(color = SubGroup)) + 
+    geom_boxplot(na.rm = TRUE, position = pos_dodge, width = box_width, aes(color = SubGroup)) +
     labs(x = group_name, y = values_name) +
-    scale_fill_manual(name = subgroup_name, values = subgroup_colors) +
-    scale_color_manual(name = subgroup_name, values = subgroup_colors)
+    scale_fill_manual(name = NULL, values = subgroup_colors) +
+    scale_color_manual(name = NULL, values = outline_colors)
   
   ## Add limits
   if (!is.null(limits)) {
-    plot <- plot + scale_y_continuous(limits = limits)
+    plot <- plot + scale_y_continuous(limits = limits, expand = expansion(mult = c(0, 0.05)))
   }
   
   ## Add dividers
@@ -348,9 +372,14 @@ plot.grouped_boxplots <- function(data,
                  lwd = 0.2, colour = "grey")
   }
   
-  ## Add or remove legend
+  ## Legend
   if (!LEGEND) {
     plot <- plot + guides(fill = "none", color = "none")
+  } else {
+    plot <- plot + 
+      theme(legend.position = "bottom") +
+      guides(fill = guide_legend(nrow = 1, label.position = "right"), 
+             color = guide_legend(nrow = 1, label.position = "right"))
   }
   
   return(plot)
@@ -462,7 +491,7 @@ plot.multiple_lines <- function(data,
 # - Desc:
 #   Adds row and column labels (and optional title) to a grid of ggplots.
 labled_plots_grid <- function(plot, title = NULL, labels_cols = NULL,
-                              labels_rows = NULL, height = 4, width = 4) {
+                              labels_rows = NULL, height = 15, width = 18) {
   
   ## Compute grid dimensions
   n_row <- max(plot$layout$t)
@@ -471,7 +500,7 @@ labled_plots_grid <- function(plot, title = NULL, labels_cols = NULL,
   ## Add column labels
   if (!is.null(labels_cols)) {
     labels_grobs_cols <- lapply(labels_cols, function(lab)
-      textGrob(lab, gp = gpar(fontsize = 12, fontface = "bold")))
+      textGrob(lab, gp = gpar(fontsize = TEXT_SZ, fontface = "bold")))
     labels_grobs_cols <- arrangeGrob(grobs = labels_grobs_cols, nrow = 1)
   }
   
@@ -481,18 +510,18 @@ labled_plots_grid <- function(plot, title = NULL, labels_cols = NULL,
     labels_grobs_rows <- list()
     if (!is.null(labels_cols)) {
       add <- 1
-      labels_grobs_rows[[1]] <- textGrob(" ", gp = gpar(fontsize = 12, fontface = "bold"))
+      labels_grobs_rows[[1]] <- textGrob(" ", gp = gpar(fontsize = TEXT_SZ, fontface = "bold"))
     }
     for (row in 1:length(labels_rows) + add) {
       label_row <- labels_rows[[row - add]]
-      labels_grobs_rows[[row]] <- textGrob(label_row, gp = gpar(fontsize = 12, fontface = "bold"), rot = 90)
+      labels_grobs_rows[[row]] <- textGrob(label_row, gp = gpar(fontsize = TEXT_SZ, fontface = "bold"), rot = 90)
     }
     labels_grobs_rows <- arrangeGrob(grobs = labels_grobs_rows, ncol = 1, heights = c(1, rep(height, n_row)))
   }
   
   ## Add title
   if (!is.null(title)) {
-    title_grob <- textGrob(title, gp = gpar(fontsize = 14, fontface = "bold"))
+    title_grob <- textGrob(title, gp = gpar(fontsize = TEXT_SZ, fontface = "bold"))
   }
   
   ## Combine all components
@@ -726,7 +755,7 @@ plot.aggregated_data <- function(loaded_results, data_plot_orig, title_prefix, v
           subgroup_labels = model_labels[match(valid_models, model_names)],
           subgroup_colors = model_colors[match(valid_models, model_names)],
           limits = limits,
-          LEGEND = FALSE
+          LEGEND = TRUE
         ) + std_plot_settings()
       }
       
@@ -804,31 +833,31 @@ plot.aggregated_data <- function(loaded_results, data_plot_orig, title_prefix, v
     
     if (isTRUE(plots_catalog$boxplots)) {
       boxplot <- arrangeGrob(grobs = boxplot_list, ncol = ncols)
-      boxplot <- labled_plots_grid(boxplot, title, labels_cols, labels_rows, 9, 7)
+      boxplot <- labled_plots_grid(boxplot, title, labels_cols, labels_rows)
       grid.arrange(boxplot)
     }
     
     if (isTRUE(plots_catalog$lines)) {
       plot <- arrangeGrob(grobs = plot_list, ncol = ncols)
-      plot <- labled_plots_grid(plot, title, labels_cols, labels_rows, 9, 7)
+      plot <- labled_plots_grid(plot, title, labels_cols, labels_rows)
       grid.arrange(plot)
     }
     
     if (isTRUE(plots_catalog$logx)) {
       plot_logx <- arrangeGrob(grobs = plot_logx_list, ncol = ncols)
-      plot_logx <- labled_plots_grid(plot_logx, title, labels_cols, labels_rows, 9, 7)
+      plot_logx <- labled_plots_grid(plot_logx, title, labels_cols, labels_rows)
       grid.arrange(plot_logx)
     }
     
     if (isTRUE(plots_catalog$loglog)) {
       plot_loglog <- arrangeGrob(grobs = plot_loglog_list, ncol = ncols)
-      plot_loglog <- labled_plots_grid(plot_loglog, title, labels_cols, labels_rows, 9, 7)
+      plot_loglog <- labled_plots_grid(plot_loglog, title, labels_cols, labels_rows)
       grid.arrange(plot_loglog)
     }
     
     if (isTRUE(plots_catalog$normalized)) {
       plot_loglog_normalized <- arrangeGrob(grobs = plot_loglog_normalized_list, ncol = ncols)
-      plot_loglog_normalized <- labled_plots_grid(plot_loglog_normalized, title, labels_cols, labels_rows, 9, 7)
+      plot_loglog_normalized <- labled_plots_grid(plot_loglog_normalized, title, labels_cols, labels_rows)
       grid.arrange(plot_loglog_normalized)
     }
   }

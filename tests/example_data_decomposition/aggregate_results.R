@@ -93,6 +93,9 @@ title_prefix <- "Execution times w.r.t the"
 values_name <- "Time [seconds]"
 limits <- c(0, max(data_plot[loaded_results$model_names]))
 
+WIDTH <- 15
+HEIGHT <- 7.5
+
 plots_catalog <- list(
   boxplots = TRUE,
   lines = TRUE,
@@ -103,7 +106,7 @@ plots_catalog <- list(
 
 
 ## Open a pdf where to save the plots
-pdf(paste(path_list$images, name_main_test, "/time_complexity.pdf", sep = ""), width = 15, height = 15)
+pdf(paste(path_list$images, name_main_test, "/time_complexity.pdf", sep = ""), width = WIDTH, height = HEIGHT)
 plot.aggregated_data(
   loaded_results, data_plot, title_prefix, values_names,
   order = order, limits = limits, plots_catalog = plots_catalog
@@ -115,7 +118,7 @@ dev.off()
 ### RMSE ----
 
 ## Open a pdf where to save the plots
-pdf(paste(path_list$images, name_main_test, "/rmse.pdf", sep = ""), width = 15, height = 15)
+pdf(paste(path_list$images, name_main_test, "/rmse.pdf", sep = ""), width = WIDTH, height = HEIGHT)
 
 
 #### Reconstruction error at locations ----
@@ -180,7 +183,7 @@ dev.off()
 ### Angles ----
 
 ## Open a pdf where to save the plots
-pdf(paste(path_list$images, name_main_test, "/angles.pdf", sep = ""), width = 15, height = 15)
+pdf(paste(path_list$images, name_main_test, "/angles.pdf", sep = ""), width = WIDTH, height = HEIGHT)
 
 ## Set plots parameters
 data_plot <- loaded_results$angles$components_m
@@ -200,7 +203,7 @@ dev.off()
 ### Regularization ----
 
 ## Open a pdf where to save the plots
-pdf(paste(path_list$images, name_main_test, "/regularization.pdf", sep = ""), width = 15, height = 15)
+pdf(paste(path_list$images, name_main_test, "/regularization.pdf", sep = ""), width = WIDTH, height = HEIGHT)
 
 ## Set plots parameters
 data_plot <- loaded_results$lambdas
